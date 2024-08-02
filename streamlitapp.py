@@ -68,7 +68,7 @@ def process_video(video_path):
     cap.release()
 
 def main():
-    st.title("YOLO Object Detection")
+    st.title("YOLO9tr Pavement Damage Detection")
     
     add_logo("logo_ai.jpg")
     
