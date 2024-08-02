@@ -1,19 +1,12 @@
 import streamlit as st
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import os
 from PIL import Image
 import torch
-import sys
 import cv2
-import tempfile
-import yt_dlp
-
-# Assuming detect_dual.py has a run_detection function
-from detect_dual import run as yolo_run_detection
+from pathlib import Path
+from paste import run as yolo_run_detection
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-new_env = os.environ.copy()
 
 def add_logo(logo_path, size=(200, 150)):
     logo = Image.open(logo_path)
@@ -21,19 +14,37 @@ def add_logo(logo_path, size=(200, 150)):
     st.image(logo, use_column_width=False)
 
 def run_detection(source_path):
-    # Directly call the function from detect_dual.py
+    output_dir = Path("runs/detect/exp")
     yolo_run_detection(
+        weights="yolo.pt",  # Adjust this path to your model weights
         source=source_path,
         imgsz=(640, 640),
-        device="cpu",
-        weights="models/detect/yolov9tr.pt",
-        name="yolov9_c_640_detect",
-        exist_ok=True)
-    
-    # Find the output image or video
-    output_dir = "runs/detect/yolov9_c_640_detect"
-    output_path = os.path.join(output_dir, os.path.basename(source_path))
-    return output_path
+        conf_thres=0.25,
+        iou_thres=0.45,
+        max_det=1000,
+        device='',
+        view_img=False,
+        save_txt=False,
+        save_conf=False,
+        save_crop=False,
+        nosave=False,
+        classes=None,
+        agnostic_nms=False,
+        augment=False,
+        visualize=False,
+        update=False,
+        project=output_dir.parent,
+        name=output_dir.name,
+        exist_ok=True,
+        line_thickness=3,
+        hide_labels=False,
+        hide_conf=False,
+        half=False,
+        dnn=False,
+        vid_stride=1,
+    )
+    output_path = output_dir / Path(source_path).name
+    return str(output_path)
 
 def process_video(video_path):
     cap = cv2.VideoCapture(video_path)
@@ -41,9 +52,7 @@ def process_video(video_path):
         raise ValueError(f"Unable to open video file: {video_path}")
     
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
     
-    # Process every 10th frame
     for i in range(0, frame_count, 10):
         cap.set(cv2.CAP_PROP_POS_FRAMES, i)
         ret, frame = cap.read()
@@ -58,23 +67,12 @@ def process_video(video_path):
     
     cap.release()
 
-def download_youtube_video(url):
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'outtmpl': '%(id)s.%(ext)s',
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info)
-    return filename
-
 def main():
-    st.title("YOLO9tr Object Detection")
+    st.title("YOLO Object Detection")
     
-    # Add the research center logo at the top of the app
     add_logo("logo_ai.jpg")
     
-    source_type = st.radio("Select source type:", ("Image", "Video", "YouTube Link"))
+    source_type = st.radio("Select source type:", ("Image", "Video"))
     
     if source_type == "Image":
         uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
@@ -100,31 +98,17 @@ def main():
                 f.write(uploaded_file.getbuffer())
             
             if st.button("Run Detection"):
-                with st.spinner("Running detection..."):
-                    output_frames = process_video(source_path)
-                    for frame in output_frames:
-                        st.image(frame, caption="Detection Result", use_column_width=True)
-                os.remove(source_path)  # Clean up temporary video file
-    
-    elif source_type == "YouTube Link":
-        youtube_url = st.text_input("Enter YouTube video URL:")
-        if youtube_url:
-            if st.button("Run Detection"):
                 try:
-                    with st.spinner("Downloading video and running detection..."):
-                        video_path = download_youtube_video(youtube_url)
-                        st.text(f"Downloaded video: {video_path}")
-                        if not os.path.exists(video_path):
-                            raise FileNotFoundError(f"Downloaded video file not found: {video_path}")
-                        
-                        output_frames = process_video(video_path)
+                    with st.spinner("Running detection..."):
+                        output_frames = process_video(source_path)
+                        result_placeholder = st.empty()
                         for frame in output_frames:
-                            st.image(frame, caption="Detection Result", use_column_width=True)
-                        os.remove(video_path)  # Clean up the temporary video file
+                            result_placeholder.image(frame, caption="Detection Result", use_column_width=True)
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
-                    st.text("Error details:")
-                    st.text(str(e))
+                finally:
+                    if os.path.exists(source_path):
+                        os.remove(source_path)  # Clean up temporary video file
 
 if __name__ == "__main__":
     main()
