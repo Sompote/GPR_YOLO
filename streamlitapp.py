@@ -16,7 +16,7 @@ def add_logo(logo_path, size=(200, 150)):
 def run_detection(source_path):
     output_dir = Path("runs/detect/exp")
     yolo_run_detection(
-        weights="yolo.pt",  # Adjust this path to your model weights
+        weights="models/detect/yolov9tr.pt",  # Adjust this path to your model weights
         source=source_path,
         imgsz=(640, 640),
         conf_thres=0.25,
