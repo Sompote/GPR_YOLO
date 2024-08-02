@@ -4,7 +4,7 @@ from PIL import Image
 import torch
 import cv2
 from pathlib import Path
-from paste import run as yolo_run_detection
+from detect_dual import run as yolo_run_detection
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
