@@ -68,7 +68,7 @@ def process_video(video_path):
     cap.release()
 
 def main():
-    st.title("YOLO9tr Pavement Damage Detection")
+    st.title("YOLO9tr GPR detection")
     
     add_logo("logo_ai.jpg")
     
@@ -81,7 +81,7 @@ def main():
             with open(source_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
         else:
-            source_path = "United_States_000502.jpg"  # Default image
+            source_path = "GPR_example.jpg"  # Default image
         
         st.image(source_path, caption="Image for Detection", use_column_width=True)
         
